@@ -1,0 +1,95 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    name: Build - Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Cache dependensi Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependensi (composer install)
+        run: composer install --prefer-dist --no-progress
+
+  test:
+    name: Test - Run Feature Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Cache dependensi Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependensi (composer install)
+        run: composer install --prefer-dist --no-progress
+
+      - name: Siapkan file environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Siapkan database SQLite untuk testing
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Jalankan php artisan test
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+        run: php artisan test
+
+  staging:
+    name: Staging - Simulasi Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Simulasi deploy ke staging
+        run: |
+          echo "Menyiapkan environment staging..."
+          echo "Deploy ke staging berhasil disimulasikan."
+
+  production:
+    name: Production - Deploy
+    needs: staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Jalankan deploy.sh (simulasi)
+        run: |
+          chmod +x deploy.sh
+          ./deploy.sh

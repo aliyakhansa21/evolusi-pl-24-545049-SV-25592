@@ -10,21 +10,53 @@ class TaskTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_user_can_create_a_task(): void
+    public function test_task_list_page_can_be_rendered(): void
     {
-        $response = $this->post('/tasks', ['title' => 'Belajar Laravel']);
+        Task::factory()->count(3)->create();
 
-        $response->assertRedirect('/tasks');
-        $this->assertDatabaseHas('tasks', ['title' => 'Belajar Laravel']);
-    }
-
-    public function test_task_list_page_loads(): void
-    {
-        Task::factory()->create(['title' => 'Contoh Task']);
-
-        $response = $this->get('/tasks');
+        $response = $this->get(route('tasks.index'));
 
         $response->assertStatus(200);
-        $response->assertSee('Contoh Task');
+        $response->assertViewIs('tasks.index');
+    }
+
+    public function test_a_task_can_be_created(): void
+    {
+        $response = $this->post(route('tasks.store'), [
+            'title' => 'Menyelesaikan pipeline CI/CD',
+            'description' => 'Tugas KEPL bagian 3',
+        ]);
+
+        $response->assertRedirect(route('tasks.index'));
+        $this->assertDatabaseHas('tasks', [
+            'title' => 'Menyelesaikan pipeline CI/CD',
+        ]);
+    }
+
+    public function test_a_task_can_be_updated(): void
+    {
+        $task = Task::factory()->create(['is_completed' => false]);
+
+        $response = $this->put(route('tasks.update', $task), [
+            'title' => $task->title,
+            'description' => $task->description,
+            'is_completed' => true,
+        ]);
+
+        $response->assertRedirect(route('tasks.index'));
+        $this->assertDatabaseHas('tasks', [
+            'id' => $task->id,
+            'is_completed' => true,
+        ]);
+    }
+
+    public function test_a_task_can_be_deleted(): void
+    {
+        $task = Task::factory()->create();
+
+        $response = $this->delete(route('tasks.destroy', $task));
+
+        $response->assertRedirect(route('tasks.index'));
+        $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
     }
 }
