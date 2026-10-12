@@ -9,8 +9,9 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         return [
-            'title' => $this->faker->sentence(3),
-            'is_done' => false,
+            'title' => $this->faker->sentence(4),
+            'description' => $this->faker->paragraph(),
+            'is_completed' => false,
         ];
     }
 }

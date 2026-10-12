@@ -21,26 +21,39 @@ class TaskController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
         ]);
 
-        Task::create(['title' => $request->title]);
+        Task::create($validated);
 
-        return redirect()->route('tasks.index')->with('success', 'Task berhasil ditambahkan!');
+        return redirect()->route('tasks.index')->with('success', 'Task berhasil ditambahkan.');
     }
 
-    public function toggle(Task $task)
+    public function edit(Task $task)
     {
-        $task->update(['is_done' => ! $task->is_done]);
+        return view('tasks.edit', compact('task'));
+    }
 
-        return redirect()->route('tasks.index');
+    public function update(Request $request, Task $task)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        $validated['is_completed'] = $request->boolean('is_completed');
+
+        $task->update($validated);
+
+        return redirect()->route('tasks.index')->with('success', 'Task berhasil diperbarui.');
     }
 
     public function destroy(Task $task)
     {
         $task->delete();
 
-        return redirect()->route('tasks.index');
+        return redirect()->route('tasks.index')->with('success', 'Task berhasil dihapus.');
     }
 }
